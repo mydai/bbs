@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.CommentsMapper">
+	<resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Comments">
+		<id column="CID" property="cid" jdbcType="INTEGER" />
+		<result column="CCONTENT" property="ccontent" jdbcType="CLOB" />
+		<result column="REPLYTIME" property="replytime" jdbcType="DATE" />
+		<result column="PRAISENUM" property="praisenum" jdbcType="VARCHAR" />
+		<result column="DID" property="did" jdbcType="INTEGER" />
+		<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+			<id property="bid" column="bid" />
+			<result property="name" column="name" />
+			<result property="img" column="img" />
+		</association>
+		
+	</resultMap>
+
+	<select id="selectCommentsList" parameterType="com.cn.hnust.pojo.Details"
+		resultMap="BaseResultMap">
+		select
+		c.cid,c.ccontent,c.replytime,c.praisenum,b.bid,b.name,b.img from
+		comments c
+		left join userb b on c.bid = b.bid
+		left join details d on d.did = c.did
+		where c.did = #{did} order by c.replytime desc
+	</select>
+
+	<insert id="insertComments" statementType="CALLABLE"
+		parameterType="com.cn.hnust.pojo.Comments">
+        {call pro_insertComments(
+		#{ccontent,mode=IN,jdbcType=VARCHAR},
+		#{userb.bid,mode=IN,jdbcType=INTEGER},
+		#{did,mode=IN,jdbcType=INTEGER},
+		#{cid,mode=OUT,jdbcType=INTEGER}
+		)
+		}
+	</insert>
+
+      <select id="selectCommentsByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select c.cid,c.did,c.bid,c.ccontent,s.praisenum,c.replytime,rownum as num from comments c 
+       left join (select cid,count(*) as praisenum from praise group by cid) s on c.cid = s.cid
+       <where>
+         <if test="commentsCondition.bid != null and commentsCondition.bid !=0">
+          and bid = #{commentsCondition.bid}
+         </if>
+         <if test="commentsCondition.did != null and commentsCondition.did !=0">
+          and did = #{commentsCondition.did}
+         </if>
+         <if test="commentsCondition.ccontent != null and commentsCondition.ccontent !=''">
+          and ccontent like CONCAT(CONCAT('%', #{commentsCondition.ccontent}), '%') 
+         </if>
+<!--          <if test="commentsCondition.praiseStart !=null and commentsCondition.praiseEnd ==null">
+          and p <![CDATA[>]]>#{commentsCondition.replyStart} 
+         </if>
+         <if test="commentsCondition.praiseStart ==null and commentsCondition.praiseEnd !=null">
+          and replytime <![CDATA[<]]>#{commentsCondition.replyEnd}
+         </if>
+         <if test="commentsCondition.praiseStart !=null and commentsCondition.praiseEnd !=null">
+          and replytime between #{commentsCondition.replyStart} and #{commentsCondition.replyEnd}
+         </if> -->
+         <if test="commentsCondition.replyStart !=null and commentsCondition.replyEnd ==null">
+          and replytime <![CDATA[>]]>#{commentsCondition.replyStart} 
+         </if>
+         <if test="commentsCondition.replyStart ==null and commentsCondition.replyEnd !=null">
+          and replytime <![CDATA[<]]>#{commentsCondition.replyEnd}
+         </if>
+         <if test="commentsCondition.replyStart !=null and commentsCondition.replyEnd !=null">
+          and replytime between #{commentsCondition.replyStart} and #{commentsCondition.replyEnd}
+         </if>
+       </where>
+       order by c.cid
+       ) cc
+       <where>
+         cc.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.ThemeCondition" resultType="int">
+       
+       select count(*) from theme 
+       <where>
+         <if test="bid != null and bid !=0">
+          and bid = #{bid}
+         </if>
+         <if test="did != null and did !=0">
+          and did = #{did}
+         </if>
+         <if test="ccontent != null and ccontent !=''">
+          and ccontent like CONCAT(CONCAT('%', #{commentsCondition.ccontent}), '%') 
+         </if>
+<!--          <if test="praiseStart !=null and praiseEnd ==null">
+          and p <![CDATA[>]]>#{commentsCondition.replyStart} 
+         </if>
+         <if test="praiseStart ==null and praiseEnd !=null">
+          and replytime <![CDATA[<]]>#{commentsCondition.replyEnd}
+         </if>
+         <if test="praiseStart !=null and praiseEnd !=null">
+          and replytime between #{commentsCondition.replyStart} and #{commentsCondition.replyEnd}
+         </if> -->
+         <if test="replyStart !=null and replyEnd ==null">
+          and replytime <![CDATA[>]]>#{commentsCondition.replyStart} 
+         </if>
+         <if test="replyStart ==null and replyEnd !=null">
+          and replytime <![CDATA[<]]>#{commentsCondition.replyEnd}
+         </if>
+         <if test="replyStart !=null and replyEnd !=null">
+          and replytime between #{commentsCondition.replyStart} and #{commentsCondition.replyEnd}
+         </if>
+       </where>
+    </select>
+  
+  <sql id='TABLE_NAME'>COMMENTS</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_COMMENTS.nextval</sql>
+	<insert id="insertCommentsByProperty" parameterType="com.cn.hnust.pojo.Comments">
+		<selectKey keyProperty="cid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+		insert into 
+		<include refid="TABLE_NAME" />
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="cid != null and cid !=0">
+				CID,
+			</if>
+			<if test="userb.bid != null and userb.bid !=0">
+				BID,
+			</if>
+			<if test="did != null and did !=0">
+				DID,
+			</if>
+			<if test="ccontent !=null and ccontent !=''">
+			    CCONTENT,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="cid != null and cid != 0">
+				#{cid,jdbcType=INTEGER},
+			</if>
+			<if test="userb.bid != null and userb.bid !=0">
+				#{userb.bid,jdbcType=INTEGER},
+			</if>
+			<if test="did != null and did != 0">
+				#{did,jdbcType=INTEGER},
+			</if>
+			<if test="ccontent != null and ccontent !=''">
+				#{ccontent,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+  
+    <delete id="deleteComments" parameterType="com.cn.hnust.pojo.Comments">
+      delete from comments where cid = #{cid}
+    </delete>
+  
+    <update id="updateComments" parameterType="com.cn.hnust.pojo.Comments">
+		update comments
+		<set>
+  			<if test="userb.bid != null and userb.bid !=0">
+				BID = #{userb.bid,jdbcType=INTEGER},
+			</if>
+			<if test="did != null and did !=0">
+				DID = #{did,jdbcType=INTEGER},
+			</if>
+			<if test="ccontent != null and ccontent !=''">
+				CCONTENT = #{ccontent,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where CID = #{cid,jdbcType=INTEGER}
+	</update> 
+
+</mapper>

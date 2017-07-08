@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.AdminMapper" >
+  <resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Admin" >
+    <result column="AID" property="aid" jdbcType="INTEGER" />
+    <result column="NAME" property="name" jdbcType="VARCHAR" />
+    <result column="PASS" property="pass" jdbcType="VARCHAR" />
+    <result column="STATUS" property="status" jdbcType="INTEGER" />
+    <result column="VALIDATECODE" property="validatecode" jdbcType="VARCHAR" />
+    <result column="EMAIL" property="email" jdbcType="VARCHAR" />
+    <result column="REGISTERTIME" property="registertime" jdbcType="DATE" />
+    <result column="LASTTIME" property="lasttime" jdbcType="DATE" />
+  </resultMap>
+  
+  <select id="selectAdmin" parameterType="com.cn.hnust.pojo.Admin" resultType="com.cn.hnust.pojo.Admin">
+     select * from admin where name = #{name} and pass = #{pass}
+  </select>
+  
+  <select id="selectAdminByProperty" parameterType="com.cn.hnust.pojo.Admin" resultType="com.cn.hnust.pojo.Admin">
+     select * from admin 
+     <where>
+       <if test="name!=null">
+          name = #{name,jdbcType=VARCHAR}
+       </if>
+     </where>
+  </select>
+  
+  <update id="updateAdminByProperty" parameterType="com.cn.hnust.pojo.Admin">
+     update admin 
+     <set>
+		<if test="pass != null">
+			PASS = #{pass,jdbcType=VARCHAR},
+		</if>
+		<if test="email != null">
+			EMAIL = #{email,jdbcType=VARCHAR},
+		</if>
+		<if test="validatecode != null">
+			VALIDATECODE = #{validatecode,jdbcType=VARCHAR},
+		</if>
+		<if test="status != null">
+			STATUS = #{status,jdbcType=INTEGER},
+	    </if>		
+     </set>
+     <where>
+       AID = #{aid,jdbcType = INTEGER}
+     </where>
+  </update>  
+  
+    <select id="selectAdminByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select a.*,rownum as num from admin a 
+       <where>
+         <if test="adminCondition.name != null and adminCondition.name !=''">
+          and name like CONCAT(CONCAT('%', #{adminCondition.name}), '%') 
+         </if>
+         <if test="adminCondition.email != null and adminCondition.email !=''">
+          and email like CONCAT(CONCAT('%', #{adminCondition.email}), '%') 
+         </if>
+         <if test="adminCondition.regStart !=null and adminCondition.regEnd ==null">
+          and registertime <![CDATA[>]]>#{adminCondition.regStart} 
+         </if>
+         <if test="adminCondition.regStart ==null and adminCondition.regEnd !=null">
+          and registertime <![CDATA[<]]>#{adminCondition.regEnd}
+         </if>
+         <if test="adminCondition.regStart !=null and adminCondition.regEnd !=null">
+          and registertime between #{adminCondition.regStart} and #{adminCondition.regEnd}
+         </if>
+       </where>
+       order by a.aid
+       ) aa
+       <where>
+         aa.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.AdminCondition" resultType="int">
+       
+       select count(*) from admin 
+       <where>
+         <if test="name != null and name !=''">
+          and name like CONCAT(CONCAT('%', #{name}), '%') 
+         </if>
+         <if test="email != null and email !=''">
+          and email like CONCAT(CONCAT('%', #{email}), '%') 
+         </if>
+         <if test="regStart !=null and regEnd ==null">
+          and registertime <![CDATA[>]]>#{regStart} 
+         </if>
+         <if test="regStart ==null and regEnd !=null">
+          and registertime <![CDATA[<]]>#{regEnd}
+         </if>
+         <if test="regStart !=null and regEnd !=null">
+          and registertime between #{regStart} and #{regEnd}
+         </if>
+       </where>
+    </select>
+  
+    <sql id='TABLE_NAME'>ADMIN</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_ADMIN.nextval</sql>
+	<insert id="insertAdmin" parameterType="com.cn.hnust.pojo.Admin">
+		<selectKey keyProperty="aid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+		insert into 
+		<include refid="TABLE_NAME" />
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="aid != null and aid !=0">
+				AID,
+			</if>
+			<if test="name != null and name !=''">
+				NAME,
+			</if>
+			<if test="pass != null and pass !=''">
+				PASS,
+			</if>
+			<if test="email != null and email !=''">
+				EMAIL,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="aid != null and aid !=0">
+				#{aid,jdbcType=INTEGER},
+			</if>
+			<if test="name != null and name !=''">
+				#{name,jdbcType=VARCHAR},
+			</if>
+			<if test="pass != null and pass !=''">
+				#{pass,jdbcType=VARCHAR},
+			</if>
+			<if test="email != null and email !=''">
+				#{email,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+    
+    <delete id="deleteAdmin" parameterType="com.cn.hnust.pojo.Admin">
+       delete from admin where aid = #{aid}
+    </delete>
+  
+    <select id="selectAllCount" resultType="int">
+       select count(*) as num from userb
+       union all 
+       select count(*) as num from postings
+       union all
+       select count(*) as num from details
+       union all
+       select count(*) as num from comments
+       union all
+       select count(*) as num from msg
+       union all
+       select count(*) as num from praise
+       union all
+       select count(*) as num from report
+    </select>
+  
+</mapper>

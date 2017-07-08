@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.PostingsMapper">
+	<resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Postings">
+		<id column="PID" property="pid" jdbcType="INTEGER" />
+		<result column="TITLE" property="title" jdbcType="VARCHAR" />
+		<result column="PCONTENT" property="pcontent" jdbcType="VARCHAR" />
+		<result column="PRAISENUM" property="praisenum" jdbcType="VARCHAR" />
+		<result column="REPLYNUM" property="replynum" jdbcType="VARCHAR" />
+		<result column="PUBLISHTIME" property="publishtime" jdbcType="DATE" />
+		<result column="LASTTIME" property="lasttime" jdbcType="DATE" />
+		<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+			<id property="bid" column="bid" />
+			<result property="name" column="name" />
+			<result property="img" column="img" />
+			<result property="intro" column="intro" />
+		</association>
+		<collection property="details" ofType="com.cn.hnust.pojo.Details">
+			<id property="did" column="did" />
+			<result property="dcontent" column="dcontent" />
+			<result property="replytime" column="replytime" />
+			<result property="floor" column="floor" />
+			<result property="replynum" column="dreplynum" />
+			<result property="praisenum" column="dpraisenum" />
+ 		    <association property="userb" javaType="com.cn.hnust.pojo.Userb">
+				<id property="bid" column="dbid" />
+				<result property="name" column="dname" />
+				<result property="img" column="dimg" />
+				<result property="intro" column="dintro" />
+			</association>
+			<collection property="praise" ofType="com.cn.hnust.pojo.Praise">
+				<id property="sid" column="ssid" />
+				<result property="pushtime" column="spushtime"/>
+			<!--   <result property="bid" column="sbid"/>
+				<result property="did" column="sdid"/> --> 
+				<result property="status" column="sstatus"/>
+				<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+				  <id property="bid" column="sbid" />
+				</association>
+				<association property="details" javaType="com.cn.hnust.pojo.Details">
+				  <id property="did" column="sdid"></id>
+				</association>
+				
+	    	</collection>
+		</collection>
+		<collection property="postings_theme" ofType="com.cn.hnust.pojo.Postings_Theme">
+			<id property="ptid" column="ptid" />
+			<association property="theme" javaType="com.cn.hnust.pojo.Theme">
+				<result property="tid" column="tid" />
+				<result property="tname" column="tname" />
+			</association>
+		</collection>
+		<collection property="praise" ofType="com.cn.hnust.pojo.Praise">
+			<id property="sid" column="psid"/>
+			<result property="pushtime" column="ppushtime"/>
+ 	<!--	<result property="bid" column="pbid"/>
+			<result property="pid" column="ppid"/>  -->	
+			<result property="status" column="pstatus"/>
+			<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+			  <id property="bid" column="pbid"/>
+			</association>
+			<association property="postings" javaType="com.cn.hnust.pojo.Postings">
+			  <id property="pid" column="ppid"/>
+			</association>
+    	</collection>
+	</resultMap>
+
+	<select id="selectPostingsById" parameterType="int" resultMap="BaseResultMap">
+	
+      select p.pid,p.title,p.pcontent,p.replynum,p.publishtime,
+      pss.praisenum,b.bid,b.name,b.img,b.intro,d.did,d.dcontent,
+      d.replytime,d.bid as dbid,c.replynum as dreplynum,
+      dss.dpraisenum ,db.bid as dbid,db.name as dname,db.img as dimg,
+      db.intro as dintro,ds.ssid,ds.spushtime,ds.sbid,ds.sdid,
+      ds.sstatus,t.tname,ps.psid,ps.ppid,
+      ps.pbid,ps.pstatus from Postings p
+      left join userb b on p.bid = b.bid
+      left join details d on d.pid = p.pid
+      left join userb db on db.bid = d.bid
+      left join (select sd.sid as ssid,sd.pushtime as spushtime,sd.bid as sbid,
+      sd.did as sdid,sd.status as sstatus from praise sd 
+      ) ds on ds.sdid = d.did
+      left join (select did,count(*) as dpraisenum  from praise where status=1 group by did) dss on dss.did = d.did
+      left join postings_theme pt on pt.pid = p.pid
+      left join theme t on t.tid = pt.tid
+      left join (select sp.sid as psid,sp.pushtime as ppushtime,sp.bid as pbid,
+      sp.pid as ppid,sp.status as pstatus from praise sp) ps on ps.ppid = p.pid
+      left join (select pid,count(*) as praisenum from praise where status=1 group by pid) pss on pss.pid = p.pid
+      left join (select did,count(*) as replynum from comments group by did) c on c.did = d.did
+      where p.pid = #{pid} order by dss.dpraisenum,d.replytime desc
+		
+		<!-- 获取整个帖子的所有信息的同时也获取层中层的所有回复信息 -->
+		<!-- 
+		       select p.pid,p.title,p.pcontent,p.praisenum,p.replynum,
+			   p.publishtime,b.bid,b.name,b.img,b.intro,d.did,d.dcontent,d.replytime,d.bid
+			   as dbid,
+			   d.replynum as dreplynum,d.praisenum as dpraisenum ,db.bid as dbid,
+			   db.name as dname,db.img as dimg,db.intro as dintro,dd.did as ddid,
+			   dd.dcontent as ddcontent,dd.replytime as dreplytime,
+			   dd.replydid,ddb.bid as ddbid,ddb.name as ddname,
+			   ddb.img as ddimg,ddb.intro as ddintro, t.tname from Postings p
+			   left join userb b on p.bid = b.bid
+			   left join details d on d.pid = p.pid
+			   left join userb db on db.bid = d.bid
+			   left join details dd on dd.replydid = d.did
+			   left join userb ddb on ddb.bid = dd.bid
+			   left join postings_theme pt on pt.pid = p.pid
+			   left join theme t on t.tid = pt.tid
+			   where p.pid = #{pid} order by d.praisenum desc
+		 -->
+	</select>
+
+    <select id="selectPostingsByProperty" parameterType="com.cn.hnust.pojo.Postings" resultMap="BaseResultMap">
+       select * from postings where title = #{title}
+    </select>
+
+
+	<insert id="insertPostings" statementType="CALLABLE"
+		parameterType="com.cn.hnust.pojo.Postings">
+		{call pro_insertPostings(
+		#{title,mode=IN,jdbcType=VARCHAR},
+		#{pcontent,mode=IN,jdbcType=VARCHAR},
+		#{postings_theme[0].theme.tname,mode=IN,jdbcType=VARCHAR},
+		#{userb.bid,mode=IN,jdbcType=INTEGER},
+		#{pid,mode=OUT,jdbcType=INTEGER}
+		)
+		}
+	</insert>
+
+	<select id="selectPostingsList" resultMap="BaseResultMap">
+        select p.pid,p.title,p.pcontent,ss.praisenum,d.replynum,
+        p.publishtime,b.bid,b.name,b.img,b.intro,t.tname,
+        s.psid,s.ppushtime,s.pbid,s.ppid,s.pstatus from Postings p 
+        left join userb b on p.bid = b.bid
+        left join postings_theme pt on pt.pid = p.pid
+        left join theme t on t.tid = pt.tid
+        left join (select sid as psid,pushtime as ppushtime,bid as pbid,pid as ppid,status as pstatus
+        from praise) s on s.ppid = p.pid 
+        left join (select pid as pppid,count(*) as praisenum from praise where status = 1 group by pid)
+         ss on ss.pppid = p.pid
+        left join (select pid,count(*) as replynum from details group by pid) d on d.pid = p.pid
+        order by ss.praisenum
+	</select>
+ 
+   	<select id="selectTitleList" parameterType="String" resultMap="BaseResultMap">
+       select pid,title from postings where title like CONCAT(CONCAT('%', #{title}), '%')
+	</select>
+ 
+    <select id="selectPostingsByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+	    select * from 
+		(select p.pid,p.bid,p.title,p.pcontent,s.praisenum,d.replynum,p.publishtime,rownum as num from postings p 
+		left join (select pid,count(*) as praisenum,status from praise group by pid,status) s on p.pid = s.pid and s.status = 1
+		left join (select pid,count(*) as replynum from details group by pid) d on p.pid = d.pid
+       <where>
+         <if test="postingsCondition.bid != null and postingsCondition.bid !=0">
+          and p.bid =#{postingsCondition.bid} 
+         </if>
+         <if test="postingsCondition.title != null and postingsCondition.title !=''">
+          and p.title like CONCAT(CONCAT('%', #{postingsCondition.title}), '%')  
+         </if>
+         <if test="postingsCondition.pcontent != null and postingsCondition.pcontent !=''">
+          and p.pcontent like CONCAT(CONCAT('%', #{postingsCondition.pcontent}), '%')  
+         </if>
+         <if test="postingsCondition.publishStart !=null and postingsCondition.publishEnd ==null">
+          and p.publishtime <![CDATA[>]]>#{postingsCondition.publishStart} 
+         </if>
+         <if test="postingsCondition.publishStart ==null and postingsCondition.publishEnd !=null">
+          and p.publishtime <![CDATA[<]]>#{postingsCondition.publishEnd}
+         </if>
+         <if test="postingsCondition.publishStart !=null and postingsCondition.publishEnd !=null">
+          and p.publishtime between #{postingsCondition.publishStart} and #{postingsCondition.publishEnd}
+         </if>
+       </where>
+       order by p.pid
+       ) pp
+       <where>
+         pp.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.PostingsCondition" resultType="int">
+       
+       select count(*) from postings 
+       <where>
+         <if test="bid != null and bid !=0">
+          and bid =#{bid} 
+         </if>
+         <if test="title != null and title !=''">
+          and title like CONCAT(CONCAT('%', #{title}), '%')  
+         </if>
+         <if test="pcontent != null and pcontent !=''">
+          and pcontent like CONCAT(CONCAT('%', #{pcontent}), '%')  
+         </if>
+         <if test="publishStart !=null and publishEnd ==null">
+          and publishtime <![CDATA[>]]>#{publishStart} 
+         </if>
+         <if test="publishStart ==null and publishEnd !=null">
+          and publishtime <![CDATA[<]]>#{publishEnd}
+         </if>
+         <if test="publishStart !=null and publishEnd !=null">
+          and publishtime between #{publishStart} and #{publishEnd}
+         </if>
+       </where>
+    </select>
+  
+  <sql id='TABLE_NAME'>POSTINGS</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_POSTINGS.nextval</sql>
+	<insert id="insertPostingsByProperty" parameterType="com.cn.hnust.pojo.Postings">
+		<selectKey keyProperty="pid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+		insert into 
+		<include refid="TABLE_NAME" />
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="pid != null and pid !=0 ">
+				PID,
+			</if>
+			<if test="userb.bid != null and userb.bid !=0">
+				BID,
+			</if>
+			<if test="title != null and title !=''">
+				TITLE,
+			</if>
+			<if test="pcontent != null and pcontent !=''">
+				PCONTENT,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="pid != null and pid !=0">
+				#{pid,jdbcType=INTEGER},
+			</if>
+			<if test="userb.bid != null and userb.bid !=0">
+				#{userb.bid,jdbcType=INTEGER},
+			</if>
+			<if test="title != null and title !=''">
+				#{title,jdbcType=VARCHAR},
+			</if>
+			<if test="pcontent != null and pcontent !=''">
+				#{pcontent,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+  
+    <delete id="deletePostings" parameterType="com.cn.hnust.pojo.Postings">
+      delete from postings where pid = #{pid}
+    </delete>
+  
+    <update id="updatePostings" parameterType="com.cn.hnust.pojo.Postings">
+		update postings
+		<set>
+			<if test="userb.bid != null and userb.bid !=0">
+				bid = #{userb.bid,jdbcType=INTEGER},
+			</if>
+			<if test="title != null and title !=''">
+				title = #{title,jdbcType=VARCHAR},
+			</if>
+			<if test="pcontent != null and pcontent !=''">
+				pcontent = #{pcontent,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where PID = #{pid,jdbcType=INTEGER}
+	</update> 
+	
+	<select id="selectPostings" parameterType="com.cn.hnust.pojo.Userb" resultMap="BaseResultMap">
+	  select p.pid,p.title,p.pcontent,p.publishtime,b.bid,b.name,b.img,s.praisenum,d.replynum from postings p
+	  left join userb b on b.bid = p.bid 
+      left join (select pid as ppid,count(*) as praisenum from praise where status = 1 and  pid !=0 group by pid) s on s.ppid = p.pid 
+      left join (select pid,count(*) as replynum from details group by pid) d on d.pid = p.pid
+	  where b.bid = #{bid}
+	</select>
+
+	<!-- <sql id='TABLE_NAME'>POSTINGS</sql> <sql id='TABLE_SEQUENCE'>SEQ_POSTINGS.nextval</sql> 
+		<insert id="insertPostings" parameterType="com.cn.hnust.pojo.Postings"> <selectKey 
+		keyProperty="pid" resultType="int" order="BEFORE"> select <include refid="TABLE_SEQUENCE" 
+		/> from dual </selectKey> insert into POSTINGS (PID, TITLE,BID, PCONTENT) 
+		values (#{pid,jdbcType=INTEGER}, #{title,jdbcType=VARCHAR}, #{userb.bid,jdbcType=INTEGER}, 
+		#{pcontent,jdbcType=VARCHAR}) </insert> -->
+</mapper>

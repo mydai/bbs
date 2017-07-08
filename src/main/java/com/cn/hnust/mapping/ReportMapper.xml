@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.ReportMapper" >
+  <resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Report" >
+    <id column="RID" property="rid" jdbcType="INTEGER" />
+    <result column="RCONTENT" property="rcontent" jdbcType="VARCHAR"/>
+    <result column="REPORTTIME" property="reporttime" jdbcType="DATE" />
+    <result column="PID" property="pid" jdbcType="INTEGER" />
+    <result column="BID" property="bid" jdbcType="INTEGER"/>
+    <result column="DID" property="did" jdbcType="INTEGER"/>
+    <result column="CID" property="cid" jdbcType="INTEGER"/>
+  </resultMap>
+  
+  <sql id='TABLE_NAME'>REPORT</sql>
+  <sql id='TABLE_SEQUENCE'>SEQ_REPORT.nextval</sql>
+  <insert id="insertReport" parameterType="com.cn.hnust.pojo.Report">
+    <selectKey keyProperty="rid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+	</selectKey>
+    insert into report
+    		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="rid != null">
+				RID,
+			</if>
+			<if test="rcontent != null">
+				RCONTENT,
+			</if>
+			<if test="pid != null">
+				PID,
+			</if>
+			<if test="bid !=null">
+			    BID,
+			</if>
+			<if test="did !=null">
+			    DID,
+			</if>
+			<if test="cid !=null">
+			    CID,
+			</if>
+			
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="rid != null">
+				#{rid,jdbcType=INTEGER},
+			</if>
+			<if test="rcontent != null">
+				#{rcontent,jdbcType=VARCHAR},
+			</if>
+			<if test="pid != null">
+				#{pid,jdbcType=INTEGER},
+			</if>
+			<if test="bid !=null">
+			    #{bid,jdbcType=INTEGER},
+			</if>
+			<if test="did !=null">
+			    #{did,jdbcType=INTEGER},
+			</if>
+			<if test="cid !=null">
+			    #{cid,jdbcType=INTEGER},
+			</if>
+		</trim>
+  </insert>
+  
+  <select id="selectReportByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select r.*,rownum as num from report r 
+       <where>
+         <if test="reportCondition.rcontent != null and reportCondition.rcontent !=''">
+          and rcontent like CONCAT(CONCAT('%', #{reportCondition.rcontent}), '%') 
+         </if>
+         <if test="reportCondition.bid != null and reportCondition.bid !=0">
+          and bid = ${reportCondition.bid} 
+         </if>
+         <if test="reportCondition.pid != null and reportCondition.pid !=0">
+          and pid = ${reportCondition.pid} 
+         </if>
+         <if test="reportCondition.did != null and reportCondition.did !=0">
+          and did = ${reportCondition.did} 
+         </if>
+         <if test="reportCondition.cid != null and reportCondition.cid !=0">
+          and cid = ${reportCondition.cid} 
+         </if>
+         <if test="reportCondition.reportStart !=null and reportCondition.reportEnd ==null">
+          and reporttime <![CDATA[>]]>#{reportCondition.reportStart} 
+         </if>
+         <if test="reportCondition.reportStart ==null and reportCondition.reportEnd !=null">
+          and reporttime <![CDATA[<]]>#{reportCondition.reportEnd}
+         </if>
+         <if test="reportCondition.reportStart !=null and reportCondition.reportEnd !=null">
+          and reporttime between #{reportCondition.reportStart} and #{reportCondition.reportEnd}
+         </if>
+       </where>
+       order by r.rid
+       ) rr
+       <where>
+         rr.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.ReportCondition" resultType="int">
+       
+       select count(*) from report 
+       <where>
+         <if test="rcontent != null and rcontent !=''">
+          and rcontent like CONCAT(CONCAT('%', #{rcontent}), '%') 
+         </if>
+         <if test="bid != null and bid !=0">
+          and bid = ${bid} 
+         </if>
+         <if test="pid != null and pid !=0">
+          and pid = ${pid} 
+         </if>
+         <if test="did != null and did !=0">
+          and did = ${did} 
+         </if>
+         <if test="cid != null and cid !=0">
+          and cid = ${cid} 
+         </if>
+         <if test="reportStart !=null and reportEnd ==null">
+          and reporttime <![CDATA[>]]>#{reportStart} 
+         </if>
+         <if test="reportStart ==null and reportEnd !=null">
+          and reporttime <![CDATA[<]]>#{reportEnd}
+         </if>
+         <if test="reportStart !=null and reportEnd !=null">
+          and reporttime between #{reportStart} and #{reportEnd}
+         </if>
+       </where>
+    </select>
+  
+    <delete id="deleteReport" parameterType="com.cn.hnust.pojo.Report">
+       delete from report where rid = #{rid}
+    </delete>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <!-- <resultMap id="ResultMapWithBLOBs" type="com.cn.hnust.pojo.Report" extends="BaseResultMap" >
+    <result column="RCONTENT" property="rcontent" jdbcType="CLOB" />
+  </resultMap>
+   -->
+  <sql id="Base_Column_List" >
+    RID, REPORTTIME, PID
+  </sql>
+  <sql id="Blob_Column_List" >
+    RCONTENT
+  </sql>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from REPORT
+    where RID = #{rid,jdbcType=DECIMAL}
+  </delete>
+  <insert id="insert" parameterType="com.cn.hnust.pojo.Report" >
+    insert into REPORT (RID, REPORTTIME, PID, 
+      RCONTENT)
+    values (#{rid,jdbcType=DECIMAL}, #{reporttime,jdbcType=TIMESTAMP}, #{pid,jdbcType=DECIMAL}, 
+      #{rcontent,jdbcType=CLOB})
+  </insert>
+  <insert id="insertSelective" parameterType="com.cn.hnust.pojo.Report" >
+    insert into REPORT
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="rid != null" >
+        RID,
+      </if>
+      <if test="reporttime != null" >
+        REPORTTIME,
+      </if>
+      <if test="pid != null" >
+        PID,
+      </if>
+      <if test="rcontent != null" >
+        RCONTENT,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="rid != null" >
+        #{rid,jdbcType=DECIMAL},
+      </if>
+      <if test="reporttime != null" >
+        #{reporttime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="pid != null" >
+        #{pid,jdbcType=DECIMAL},
+      </if>
+      <if test="rcontent != null" >
+        #{rcontent,jdbcType=CLOB},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.cn.hnust.pojo.Report" >
+    update REPORT
+    <set >
+      <if test="reporttime != null" >
+        REPORTTIME = #{reporttime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="pid != null" >
+        PID = #{pid,jdbcType=DECIMAL},
+      </if>
+      <if test="rcontent != null" >
+        RCONTENT = #{rcontent,jdbcType=CLOB},
+      </if>
+    </set>
+    where RID = #{rid,jdbcType=DECIMAL}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.cn.hnust.pojo.Report" >
+    update REPORT
+    set REPORTTIME = #{reporttime,jdbcType=TIMESTAMP},
+      PID = #{pid,jdbcType=DECIMAL},
+      RCONTENT = #{rcontent,jdbcType=CLOB}
+    where RID = #{rid,jdbcType=DECIMAL}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.cn.hnust.pojo.Report" >
+    update REPORT
+    set REPORTTIME = #{reporttime,jdbcType=TIMESTAMP},
+      PID = #{pid,jdbcType=DECIMAL}
+    where RID = #{rid,jdbcType=DECIMAL}
+  </update>
+</mapper>

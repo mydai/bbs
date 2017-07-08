@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.UserbMapper">
+	<resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Userb">
+		<id column="BID" property="bid" jdbcType="INTEGER" />
+		<result column="NAME" property="name" jdbcType="VARCHAR" />
+		<result column="PASS" property="pass" jdbcType="VARCHAR" />
+		<result column="EMAIL" property="email" jdbcType="VARCHAR" />
+		<result column="IMG" property="img" jdbcType="VARCHAR" />
+		<result column="PHONE" property="phone" jdbcType="VARCHAR" />
+		<result column="VALIDATECODE" property="validatecode" jdbcType="VARCHAR" />
+		<result column="STATUS" property="status" jdbcType="INTEGER" />
+		<result column="REGISTERTIME" property="registertime" jdbcType="DATE" />
+		<result column="LASTTIME" property="lasttime" jdbcType="DATE" />
+	</resultMap>
+	<select id="selectUserb" parameterType="com.cn.hnust.pojo.Userb"
+		resultMap="BaseResultMap">
+		select * from userb
+		<where>
+			(name = #{name,jdbcType=VARCHAR} or phone =
+			#{name,jdbcType=VARCHAR} or email = #{name,jdbcType=VARCHAR}) and
+			pass
+			=
+			#{pass,jdbcType=VARCHAR}
+		</where>
+	</select>
+
+	<select id="selectUserbByProperty" parameterType="com.cn.hnust.pojo.Userb"
+		resultMap="BaseResultMap">
+		select * from userb
+		<where>
+			name = #{name,jdbcType=VARCHAR}
+		</where>
+	</select>
+
+	<update id="updateUserbByProperty" parameterType="com.cn.hnust.pojo.Userb">
+		update USERB
+		<set>
+			<if test="name != null">
+				NAME = #{name,jdbcType=VARCHAR},
+			</if>
+			<if test="pass != null">
+				PASS = #{pass,jdbcType=VARCHAR},
+			</if>
+			<if test="email != null">
+				EMAIL = #{email,jdbcType=VARCHAR},
+			</if>
+			<if test="img != null">
+				IMG = #{img,jdbcType=VARCHAR},
+			</if>
+			<if test="phone != null">
+				PHONE = #{phone,jdbcType=VARCHAR},
+			</if>
+			<if test="intro !=null">
+			    INTRO = #{intro,jdbcType=VARCHAR},
+			</if>
+			<if test="validatecode != null">
+				VALIDATECODE = #{validatecode,jdbcType=VARCHAR},
+			</if>
+			<if test="status != null">
+				STATUS = #{status,jdbcType=INTEGER},
+			</if>
+		</set>
+		where BID = #{bid,jdbcType=INTEGER}
+	</update>
+	
+	<update id="updateStatusByProperty" parameterType="com.cn.hnust.pojo.Userb">
+		update USERB
+		<set>
+			STATUS=1
+		</set>
+		<where>
+		   NAME=#{name,jdbcType=VARCHAR} and PASS=#{pass,jdbcType=VARCHAR}
+		    and EMAIL=#{email,jdbcType=VARCHAR} and VALIDATECODE=#{validatecode,jdbcType=VARCHAR}
+		</where>
+	</update>
+    
+    <sql id='TABLE_NAME'>USERB</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_USERB.nextval</sql>
+	<insert id="insertUserbByProperty" parameterType="com.cn.hnust.pojo.Userb">
+		<selectKey keyProperty="bid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+		insert into 
+		<include refid="TABLE_NAME" />
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bid != null">
+				BID,
+			</if>
+			<if test="name != null">
+				NAME,
+			</if>
+			<if test="pass != null">
+				PASS,
+			</if>
+			<if test="email != null">
+				EMAIL,
+			</if>
+			<if test="img != null and img !=''">
+				IMG,
+			</if>
+			<if test="phone != null">
+				PHONE,
+			</if>
+			<if test="validatecode != null">
+				VALIDATECODE,
+			</if>
+			<if test="intro != null">
+			    INTRO,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bid != null">
+				#{bid,jdbcType=INTEGER},
+			</if>
+			<if test="name != null">
+				#{name,jdbcType=VARCHAR},
+			</if>
+			<if test="pass != null">
+				#{pass,jdbcType=VARCHAR},
+			</if>
+			<if test="email != null">
+				#{email,jdbcType=VARCHAR},
+			</if>
+			<if test="img != null and img !=''">
+				#{img,jdbcType=VARCHAR},
+			</if>
+			<if test="phone != null">
+				#{phone,jdbcType=VARCHAR},
+			</if>
+			<if test="validatecode != null">
+				#{validatecode,jdbcType=VARCHAR},
+			</if>
+			<if test="intro != null">
+			    #{intro,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+	
+	<select id="selectNameList" parameterType="String" resultType="String">
+	  select u.name from userb u where u.name like CONCAT(CONCAT('%', #{name}), '%')
+	</select>
+    
+    <select id="selectUserbList" resultMap="BaseResultMap">
+      select * from userb
+    </select>
+    
+    <select id="selectAllCount" parameterType="com.cn.hnust.pojo.Userb" resultType="int">
+       select count(*) as num from postings p where p.bid = #{bid} 
+       union all
+       select count(*) as num from details d where d.bid = #{bid} 
+       union all
+       select count(*) as num from comments c where c.bid = #{bid} 
+       union all
+       select count(*) as num from msg m where m.bid = #{bid} 
+       union all
+       select count(*) as num from praise s where s.bid = #{bid} 
+       union all
+       select count(*) as num from report r where r.bid = #{bid} 
+    </select>
+    
+    <delete id="deleteUserb" parameterType="com.cn.hnust.pojo.Userb">
+       delete from userb where bid = #{bid}
+    </delete>
+    
+    <select id="selectUserbByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select u.*,rownum as num from userb u 
+       <where>
+         <if test="userbCondition.name != null and userbCondition.name !=''">
+          and name like CONCAT(CONCAT('%', #{userbCondition.name}), '%') 
+         </if>
+         <if test="userbCondition.email != null and userbCondition.email !=''">
+          and email like CONCAT(CONCAT('%', #{userbCondition.email}), '%') 
+         </if>
+         <if test="userbCondition.phone !=null and userbCondition.phone !=''">
+          and phone like CONCAT(CONCAT('%', #{userbCondition.phone}), '%') 
+         </if>
+         <if test="userbCondition.regStart !=null and userbCondition.regEnd ==null">
+          and registertime <![CDATA[>]]>#{userbCondition.regStart} 
+         </if>
+         <if test="userbCondition.regStart ==null and userbCondition.regEnd !=null">
+          and registertime <![CDATA[<]]>#{userbCondition.regEnd}
+         </if>
+         <if test="userbCondition.regStart !=null and userbCondition.regEnd !=null">
+          and registertime between #{userbCondition.regStart} and #{userbCondition.regEnd}
+         </if>
+       </where>
+       order by u.bid
+       ) uu
+       <where>
+         uu.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.UserbCondition" resultType="int">
+       
+       select count(*) from userb 
+       <where>
+         <if test="name != null and name !=''">
+          and name like CONCAT(CONCAT('%', #{name}), '%') 
+         </if>
+         <if test="email != null and email !=''">
+          and email like CONCAT(CONCAT('%', #{email}), '%') 
+         </if>
+         <if test="phone !=null and phone !=''">
+          and phone like CONCAT(CONCAT('%', #{phone}), '%') 
+         </if>
+         <if test="regStart !=null and regEnd ==null">
+          and registertime <![CDATA[>]]>#{regStart} 
+         </if>
+         <if test="regStart ==null and regEnd !=null">
+          and registertime <![CDATA[<]]>#{regEnd}
+         </if>
+         <if test="regStart !=null and regEnd !=null">
+          and registertime between #{regStart} and #{regEnd}
+         </if>
+       </where>
+    </select>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+	<sql id="Base_Column_List">
+		BID, NAME, PASS, EMAIL, IMG, PHONE, VALIDATECODE, STATUS,
+		TID, HID
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="int">
+		select
+		<include refid="Base_Column_List" />
+		from USERB
+		where BID = #{bid,jdbcType=INTEGER}
+	</select>
+
+	<insert id="insert" parameterType="com.cn.hnust.pojo.Userb">
+		insert into USERB (BID, NAME,
+		PASS,
+		EMAIL, IMG, PHONE,
+		VALIDATECODE, STATUS, TID,
+		HID)
+		values
+		(#{bid,jdbcType=INTEGER},
+		#{name,jdbcType=VARCHAR},
+		#{pass,jdbcType=VARCHAR},
+		#{email,jdbcType=VARCHAR},
+		#{img,jdbcType=VARCHAR},
+		#{phone,jdbcType=VARCHAR},
+		#{validatecode,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER},
+		#{tid},
+		#{hid})
+	</insert>
+	
+	
+	<update id="updateByPrimaryKeySelective" parameterType="com.cn.hnust.pojo.Userb">
+		update USERB
+		<set>
+			<if test="name != null">
+				NAME = #{name,jdbcType=VARCHAR},
+			</if>
+			<if test="pass != null">
+				PASS = #{pass,jdbcType=VARCHAR},
+			</if>
+			<if test="email != null">
+				EMAIL = #{email,jdbcType=VARCHAR},
+			</if>
+			<if test="img != null">
+				IMG = #{img,jdbcType=VARCHAR},
+			</if>
+			<if test="phone != null">
+				PHONE = #{phone,jdbcType=VARCHAR},
+			</if>
+			<if test="validatecode != null">
+				VALIDATECODE = #{validatecode,jdbcType=VARCHAR},
+			</if>
+			<if test="status != null">
+				STATUS = #{status,jdbcType=INTEGER},
+			</if>
+		</set>
+		where BID = #{bid,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="com.cn.hnust.pojo.Userb">
+		update USERB
+		set
+		NAME = #{name,jdbcType=VARCHAR},
+		PASS = #{pass,jdbcType=VARCHAR},
+		EMAIL
+		= #{email,jdbcType=VARCHAR},
+		IMG = #{img,jdbcType=VARCHAR},
+		PHONE =
+		#{phone,jdbcType=VARCHAR},
+		VALIDATECODE =
+		#{validatecode,jdbcType=VARCHAR},
+		STATUS = #{status,jdbcType=INTEGER},
+		TID = #{tidL},
+		HID
+		= #{hid}
+		where BID = #{bid,jdbcType=INTEGER}
+	</update>
+</mapper>

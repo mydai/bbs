@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.ThemeMapper" >
+  <resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Theme" >
+    <id column="TID" property="tid" jdbcType="INTEGER" />
+    <result column="TNAME" property="tname" jdbcType="VARCHAR" />
+    <result column="CREATETIME" property="createtime" jdbcType="DATE"/>
+  </resultMap>
+  
+  <select id="selectThemeByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select t.*,rownum as num from theme t 
+       <where>
+         <if test="themeCondition.tname != null and themeCondition.tname !=''">
+          and tname like CONCAT(CONCAT('%', #{themeCondition.tname}), '%') 
+         </if>
+         <if test="themeCondition.createStart !=null and themeCondition.createEnd ==null">
+          and createtime <![CDATA[>]]>#{themeCondition.createStart} 
+         </if>
+         <if test="themeCondition.createStart ==null and themeCondition.createEnd !=null">
+          and createtime <![CDATA[<]]>#{themeCondition.createEnd}
+         </if>
+         <if test="themeCondition.createStart !=null and themeCondition.createEnd !=null">
+          and createtime between #{themeCondition.createStart} and #{themeCondition.createEnd}
+         </if>
+       </where>
+       order by t.tid
+       ) tt
+       <where>
+         tt.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.ThemeCondition" resultType="int">
+       
+       select count(*) from theme 
+       <where>
+         <if test="tname != null and tname !=''">
+          and tname like CONCAT(CONCAT('%', #{tname}), '%') 
+         </if>
+         <if test="createStart !=null and createEnd ==null">
+          and createtime <![CDATA[>]]>#{createStart} 
+         </if>
+         <if test="createStart ==null and createEnd !=null">
+          and createtime <![CDATA[<]]>#{createEnd}
+         </if>
+         <if test="createStart !=null and createEnd !=null">
+          and createtime between #{createStart} and #{createEnd}
+         </if>
+       </where>
+    </select>
+  
+  <sql id='TABLE_NAME'>THEME</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_THEME.nextval</sql>
+	<insert id="insertTheme" parameterType="com.cn.hnust.pojo.Theme">
+		<selectKey keyProperty="tid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+		insert into 
+		<include refid="TABLE_NAME" />
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="tid != null">
+				TID,
+			</if>
+			<if test="tname != null and tname !=''">
+				TNAME,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="tid != null">
+				#{tid,jdbcType=INTEGER},
+			</if>
+			<if test="tname != null and tname !=''">
+				#{tname,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+  
+    <delete id="deleteTheme" parameterType="com.cn.hnust.pojo.Theme">
+      delete from theme where tid = #{tid}
+    </delete>
+  
+    <update id="updateTheme" parameterType="com.cn.hnust.pojo.Theme">
+		update THEME
+		<set>
+			<if test="tname != null and tname !=''">
+				TNAME = #{tname,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where TID = #{tid,jdbcType=INTEGER}
+	</update> 
+  
+    <select id="selectThemeByProperty" parameterType="com.cn.hnust.pojo.Theme" resultMap="BaseResultMap">
+      select * from theme 
+      <where>
+        tname = #{tname}
+      </where>
+    </select>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<!--    <sql id="Base_Column_List" >
+    TID, TNAME
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.math.BigDecimal" >
+    select 
+    <include refid="Base_Column_List" />
+    from THEME
+    where TID = #{tid,jdbcType=DECIMAL}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.math.BigDecimal" >
+    delete from THEME
+    where TID = #{tid,jdbcType=DECIMAL}
+  </delete>
+  <insert id="insert" parameterType="com.cn.hnust.pojo.Theme" >
+    insert into THEME (TID, TNAME)
+    values (#{tid,jdbcType=DECIMAL}, #{tname,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.cn.hnust.pojo.Theme" >
+    insert into THEME
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="tid != null" >
+        TID,
+      </if>
+      <if test="tname != null" >
+        TNAME,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="tid != null" >
+        #{tid,jdbcType=DECIMAL},
+      </if>
+      <if test="tname != null" >
+        #{tname,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.cn.hnust.pojo.Theme" >
+    update THEME
+    <set >
+      <if test="tname != null" >
+        TNAME = #{tname,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where TID = #{tid,jdbcType=DECIMAL}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.cn.hnust.pojo.Theme" >
+    update THEME
+    set TNAME = #{tname,jdbcType=VARCHAR}
+    where TID = #{tid,jdbcType=DECIMAL}
+  </update>-->
+</mapper>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.FriendMapper">
+ 	<resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Friend"> 
+ 		<id column="FID" property="fid" jdbcType="INTEGER"/>
+<!--  		<result column="BID" property="bid" jdbcType="INTEGER" />  -->
+  		<result column="REMARK" property="remark" jdbcType="VARCHAR"/> 
+  		<association property="userb" javaType="com.cn.hnust.pojo.Userb"> 
+   		   <id property="bid" column="bid"/> 
+   		   <result property="img" column="img"/>
+   		   <result property="name" column="name"/>  
+   		   <result property="intro" column="intro"/> 
+ 		</association> 
+ 		<association property="userf" javaType="com.cn.hnust.pojo.Userb">
+   		   <id property="bid" column="fbid"/> 
+   		   <result property="img" column="fimg"/>
+   		   <result property="name" column="fname" />  
+   		   <result property="intro" column="fintro"/>
+ 		</association> 
+ 	</resultMap> 
+    <resultMap id="TrendsResultMap" type="com.cn.hnust.pojo.Postings">
+		<id column="PID" property="pid" jdbcType="INTEGER" />
+		<result column="TITLE" property="title" jdbcType="VARCHAR" />
+		<result column="PCONTENT" property="pcontent" jdbcType="VARCHAR" />
+		<result column="PUBLISHTIME" property="publishtime" jdbcType="DATE" />
+		<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+			<id property="bid" column="bid" />
+			<result property="name" column="name" />
+			<result property="img" column="img" />
+		</association>
+	</resultMap>
+ 	
+ 	<sql id='TABLE_NAME'>FRIEND</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_FRIEND.nextval</sql>
+ 	<insert id="insertFriend" parameterType="com.cn.hnust.pojo.Friend"> 
+		<selectKey keyProperty="fid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+ 		insert into FRIEND 
+ 		<trim prefix="(" suffix=")" suffixOverrides=","> 
+ 			<if test="fid != null"> 
+ 				FID, 
+ 			</if> 
+ 			<if test="userb.bid != null"> 
+ 				BID, 
+ 			</if> 
+ 			<if test="userf.bid != null"> 
+ 				FRIENDID, 
+ 			</if> 
+ 			<if test="remark!=null">
+ 			    REMARK,
+ 			</if>
+ 		</trim> 
+ 		<trim prefix="values (" suffix=")" suffixOverrides=","> 
+ 			<if test="fid != null"> 
+ 				#{fid,jdbcType=INTEGER}, 
+ 			</if> 
+ 			<if test="userb.bid != null"> -->
+ 				#{userb.bid,jdbcType=INTEGER}, 
+ 			</if> 
+ 			<if test="userf.bid != null"> 
+ 				#{userf.bid,jdbcType=INTEGER}, 
+ 			</if> 
+ 			<if test="remark != null">
+ 			    #{remark,jdbcType=VARCHAR}
+ 			</if>
+ 		</trim> 
+ 	</insert> 
+ 	
+ 	<select id="selectFriend" parameterType="com.cn.hnust.pojo.Friend" resultType="int">
+ 	   select count(*) as count from friend f 
+ 	   where f.bid = #{userb.bid,jdbcType=INTEGER} and f.friendid = #{userf.bid,jdbcType=INTEGER} 
+ 	</select>
+ 	
+ 	<select id="selectFriendList" parameterType="com.cn.hnust.pojo.Friend" resultMap="BaseResultMap" >
+ 	   select f.fid,uu.bid as fbid,uu.img as fimg,uu.name as fname,f.remark from friend f
+ 	   left join userb u on u.bid = f.bid
+ 	   left join userb uu on uu.bid = f.friendid 
+ 	   where f.bid = #{userb.bid} 
+ 	</select>
+ 	
+ 	<delete id="deleteFriend" parameterType="com.cn.hnust.pojo.Friend">
+ 	  delete from friend where (bid = #{userb.bid} and friendid = #{userf.bid}) or (bid = #{userf.bid} and friendid = #{userb.bid})
+ 	</delete>
+ 	
+ 	<update id="updateFriend" parameterType="com.cn.hnust.pojo.Friend">
+		update friend
+		<set>
+			<if test="remark != null">
+				remark = #{remark,jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+		  fid = #{fid,jdbcType=INTEGER}
+		</where>
+	</update>
+	
+	<select id="selectFriendTrendsList" parameterType="com.cn.hnust.pojo.Friend" resultMap="TrendsResultMap">
+      select b.bid,b.img,b.name,p.pid,p.title,p.pcontent,p.publishtime,s.praisenum,d.replynum from postings p 
+      left join userb b on b.bid in(select friendid from friend where bid = #{userb.bid}) 
+      left join (select pid as ppid,count(*) as praisenum from praise where status = 1 and  pid !=0 group by pid) s on s.ppid = p.pid 
+      left join (select pid,count(*) as replynum from details group by pid) d on d.pid = p.pid
+      where p.bid in(select friendid from friend where bid = #{userb.bid}) 
+      order by p.publishtime desc 
+	</select>
+	
+ 	
+</mapper>

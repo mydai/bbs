@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.Postings_ThemeMapper" >
+  <resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Postings_Theme" >
+    <id column="PTID" property="ptid" jdbcType="DECIMAL" />
+    <result column="PID" property="pid" jdbcType="DECIMAL" />
+    <result column="TID" property="tid" jdbcType="DECIMAL" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    PTID, PID, TID
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from POSTINGS_THEME
+    where PTID = #{ptid,jdbcType=DECIMAL}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from POSTINGS_THEME
+    where PTID = #{ptid,jdbcType=DECIMAL}
+  </delete>
+  <insert id="insert" parameterType="com.cn.hnust.pojo.Postings_Theme" >
+    insert into POSTINGS_THEME (PTID, PID, TID
+      )
+    values (#{ptid,jdbcType=DECIMAL}, #{pid,jdbcType=DECIMAL}, #{tid,jdbcType=DECIMAL}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.cn.hnust.pojo.Postings_Theme" >
+    insert into POSTINGS_THEME
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="ptid != null" >
+        PTID,
+      </if>
+      <if test="pid != null" >
+        PID,
+      </if>
+      <if test="tid != null" >
+        TID,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="ptid != null" >
+        #{ptid,jdbcType=DECIMAL},
+      </if>
+      <if test="pid != null" >
+        #{pid,jdbcType=DECIMAL},
+      </if>
+      <if test="tid != null" >
+        #{tid,jdbcType=DECIMAL},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.cn.hnust.pojo.Postings_Theme" >
+    update POSTINGS_THEME
+    <set >
+      <if test="pid != null" >
+        PID = #{pid,jdbcType=DECIMAL},
+      </if>
+      <if test="tid != null" >
+        TID = #{tid,jdbcType=DECIMAL},
+      </if>
+    </set>
+    where PTID = #{ptid,jdbcType=DECIMAL}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.cn.hnust.pojo.Postings_Theme" >
+    update POSTINGS_THEME
+    set PID = #{pid,jdbcType=DECIMAL},
+      TID = #{tid,jdbcType=DECIMAL}
+    where PTID = #{ptid,jdbcType=DECIMAL}
+  </update>
+</mapper>

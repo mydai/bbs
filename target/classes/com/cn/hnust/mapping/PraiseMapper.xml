@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.PraiseMapper" >
+  <resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Praise" >
+    <id column="SID" property="sid" jdbcType="INTEGER" />
+    <result column="PUSHTIME" property="pushtime" jdbcType="TIMESTAMP" />
+    <result column="STATUS" property="status" jdbcType="INTEGER" />
+    <result column="MARK" property="mark" jdbcType="INTEGER"/>
+   <!--    <result column="BID" property="bid" jdbcType="INTEGER" /> 
+     <result column="PID" property="pid" jdbcType="INTEGER" /> 
+     <result column="DID" property="did" jdbcType="INTEGER" /> 
+     <result column="CID" property="cid" jdbcType="INTEGER" />   -->
+
+    <association property="userb" javaType="com.cn.hnust.pojo.Userb">
+		<id property="bid" column="bid" jdbcType="INTEGER"/>
+		<result property="name" column="name"/>
+		<result property="img" column="img" jdbcType="VARCHAR"/>
+		<result property="intro" column="intro" jdbcType="VARCHAR"/>
+	</association>
+    <association property="postings" javaType="com.cn.hnust.pojo.Postings">
+		<id property="pid" column="pid" jdbcType="INTEGER"/>
+		<result property="title" column="title" jdbcType="VARCHAR"/>
+	</association>
+    <association property="details" javaType="com.cn.hnust.pojo.Details">
+		<id property="did" column="did" jdbcType="INTEGER"/>
+<!-- 		<id property="pid" column="dpid" jdbcType="INTEGER"/> -->
+		<result property="dcontent" column="dcontent" jdbcType="VARCHAR"/>
+	</association>
+    <association property="comments" javaType="com.cn.hnust.pojo.Comments">
+		<id property="cid" column="cid" jdbcType="INTEGER"/>
+<!-- 		<result property="did" column="cdid" jdbcType="INTEGER"/> -->
+		<result property="ccontent" column="ccontent" jdbcType="VARCHAR"/>
+	</association>
+	<collection property="friend" ofType="com.cn.hnust.pojo.Friend">
+		<id property="fid" column="fid" />
+		<!-- 		<result property="bid" column="fbid"/>
+ 		<result property="friendid" column="friendid"/> -->
+
+ 		<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+		  <id property="bid" column="fbid"/>
+ 	      <result property="name" column="fname"/>
+		  <result property="img" column="fimg"/>
+		  <result property="intro" column="fintro" jdbcType="VARCHAR"/> 
+		</association>
+		
+  		<association property="userf" javaType="com.cn.hnust.pojo.Userb">
+		  <id property="bid" column="friendid"/>
+   	      <result property="name" column="friendname"/>
+		  <result property="img" column="friendimg"/>
+		  <result property="intro" column="friendintro" jdbcType="VARCHAR"/> 
+		</association> 
+ 
+	</collection>
+	
+  </resultMap>
+  
+  <insert id="clickPraise" statementType="CALLABLE" parameterType="com.cn.hnust.pojo.Praise">
+  
+      {call pro_clickPraise(
+		#{userb.bid,mode=IN,jdbcType=INTEGER},
+		#{postings.pid,mode=IN,jdbcType=INTEGER},
+		#{details.did,mode=IN,jdbcType=INTEGER},
+		#{comments.cid,mode=IN,jdbcType=INTEGER},
+		#{status,mode=OUT,jdbcType=INTEGER}
+		)
+	  } 
+  </insert>
+  
+  <select id="selectPraiseList" parameterType="com.cn.hnust.pojo.Userb" resultMap="BaseResultMap">
+ select s.sid,s.pushtime,s.mark,b.bid,b.name,b.img,b.intro,p.pid,p.title,
+      d.did,d.pid as dpid,d.dcontent,c.cid,c.did as cdid,c.ccontent,
+      ffb.bid as friendid,ffb.name as friendname,ffb.img as friendimg,ffb.intro as friendintro
+      from praise s
+      left join userb b on b.bid = s.bid
+      left join postings p on p.pid = s.pid 
+      left join details d on d.did = s.did 
+      left join comments c on c.cid = s.cid
+      left join friend f on f.bid = #{bid}
+      left join userb fb on fb.bid = f.bid
+      left join userb ffb on ffb.bid = f.friendid
+      where s.mark=0 and s.status = 1 and s.bid != #{bid} and (p.bid =#{bid} or d.bid =#{bid} or c.bid =#{bid})
+      order by pushtime desc 
+  </select>
+
+   <update id="updatePraiseMark" parameterType="com.cn.hnust.pojo.Praise">
+       update praise set mark=(case when mark=1 then 0 else 1 end) where sid = #{sid}
+    </update>
+
+
+
+
+
+  
+  
+  
+  
+  
+<!--   <sql id="Base_Column_List" > -->
+<!--     SID, PUSHTIME, BID, PID, STATUS -->
+<!--   </sql> -->
+<!--   <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" > -->
+<!--     select  -->
+<!--     <include refid="Base_Column_List" /> -->
+<!--     from PRAISE -->
+<!--     where SID = #{sid,jdbcType=DECIMAL} -->
+<!--   </select> -->
+<!--   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" > -->
+<!--     delete from PRAISE -->
+<!--     where SID = #{sid,jdbcType=DECIMAL} -->
+<!--   </delete> -->
+<!--   <insert id="insert" parameterType="com.cn.hnust.pojo.Praise" > -->
+<!--     insert into PRAISE (SID, PUSHTIME, BID,  -->
+<!--       PID, STATUS) -->
+<!--     values (#{sid,jdbcType=DECIMAL}, #{pushtime,jdbcType=TIMESTAMP}, #{bid,jdbcType=DECIMAL},  -->
+<!--       #{pid,jdbcType=DECIMAL}, #{status,jdbcType=DECIMAL}) -->
+<!--   </insert> -->
+<!--   <insert id="insertSelective" parameterType="com.cn.hnust.pojo.Praise" > -->
+<!--     insert into PRAISE -->
+<!--     <trim prefix="(" suffix=")" suffixOverrides="," > -->
+<!--       <if test="sid != null" > -->
+<!--         SID, -->
+<!--       </if> -->
+<!--       <if test="pushtime != null" > -->
+<!--         PUSHTIME, -->
+<!--       </if> -->
+<!--       <if test="bid != null" > -->
+<!--         BID, -->
+<!--       </if> -->
+<!--       <if test="pid != null" > -->
+<!--         PID, -->
+<!--       </if> -->
+<!--       <if test="status != null" > -->
+<!--         STATUS, -->
+<!--       </if> -->
+<!--     </trim> -->
+<!--     <trim prefix="values (" suffix=")" suffixOverrides="," > -->
+<!--       <if test="sid != null" > -->
+<!--         #{sid,jdbcType=DECIMAL}, -->
+<!--       </if> -->
+<!--       <if test="pushtime != null" > -->
+<!--         #{pushtime,jdbcType=TIMESTAMP}, -->
+<!--       </if> -->
+<!--       <if test="bid != null" > -->
+<!--         #{bid,jdbcType=DECIMAL}, -->
+<!--       </if> -->
+<!--       <if test="pid != null" > -->
+<!--         #{pid,jdbcType=DECIMAL}, -->
+<!--       </if> -->
+<!--       <if test="status != null" > -->
+<!--         #{status,jdbcType=DECIMAL}, -->
+<!--       </if> -->
+<!--     </trim> -->
+<!--   </insert> -->
+<!--   <update id="updateByPrimaryKeySelective" parameterType="com.cn.hnust.pojo.Praise" > -->
+<!--     update PRAISE -->
+<!--     <set > -->
+<!--       <if test="pushtime != null" > -->
+<!--         PUSHTIME = #{pushtime,jdbcType=TIMESTAMP}, -->
+<!--       </if> -->
+<!--       <if test="bid != null" > -->
+<!--         BID = #{bid,jdbcType=DECIMAL}, -->
+<!--       </if> -->
+<!--       <if test="pid != null" > -->
+<!--         PID = #{pid,jdbcType=DECIMAL}, -->
+<!--       </if> -->
+<!--       <if test="status != null" > -->
+<!--         STATUS = #{status,jdbcType=DECIMAL}, -->
+<!--       </if> -->
+<!--     </set> -->
+<!--     where SID = #{sid,jdbcType=DECIMAL} -->
+<!--   </update> -->
+<!--   <update id="updateByPrimaryKey" parameterType="com.cn.hnust.pojo.Praise" > -->
+<!--     update PRAISE -->
+<!--     set PUSHTIME = #{pushtime,jdbcType=TIMESTAMP}, -->
+<!--       BID = #{bid,jdbcType=DECIMAL}, -->
+<!--       PID = #{pid,jdbcType=DECIMAL}, -->
+<!--       STATUS = #{status,jdbcType=DECIMAL} -->
+<!--     where SID = #{sid,jdbcType=DECIMAL} -->
+<!--   </update> -->
+</mapper>

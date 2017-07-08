@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.LogMapper" >
+  <resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Log" >
+    <id column="LID" property="lid" jdbcType="INTEGER" />
+    <result property="createdate" column="CREATEDATE" jdbcType="DATE" />
+    <result property="content" column="CONTENT" jdbcType="VARCHAR" />
+    <result property="operation" column="OPERATION" jdbcType="VARCHAR" />
+    <result property="requestip" column="REQUESTIP" jdbcType="VARCHAR" />
+	<association property="userb" javaType="com.cn.hnust.pojo.Userb"> 
+	   <id property="bid" column="bid"/> 
+	   <result property="name" column="name"/>  
+	</association>
+	<association property="admin" javaType="com.cn.hnust.pojo.Admin"> 
+	   <id property="aid" column="aid"/> 
+	   <result property="name" column="name"/>  
+	</association>
+  </resultMap>
+  
+      <select id="selectLogByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select l.*,rownum as num from log l 
+       <where>
+         <if test="logCondition.aid != null and logCondition.aid !=0">
+          and aid = #{logCondition.aid} 
+         </if>
+         <if test="logCondition.bid != null and logCondition.bid !=0">
+          and bid = #{logCondition.bid} 
+         </if>
+         <if test="logCondition.content != null and logCondition.content !=''">
+          and content like CONCAT(CONCAT('%', #{logCondition.content}), '%') 
+         </if>
+         <if test="logCondition.operation != null and logCondition.operation !=''">
+          and operation like CONCAT(CONCAT('%', #{logCondition.operation}), '%')
+         </if>
+         <if test="logCondition.requestip != null and logCondition.requestip !=''">
+          and requestip like CONCAT(CONCAT('%', #{logCondition.requestip}), '%')
+         </if>
+         <if test="logCondition.logStart !=null and logCondition.logEnd ==null">
+          and createdate <![CDATA[>]]>#{logCondition.logStart} 
+         </if>
+         <if test="logCondition.logStart ==null and logCondition.logEnd !=null">
+          and createdate <![CDATA[<]]>#{logCondition.logEnd}
+         </if>
+         <if test="logCondition.logStart !=null and logCondition.logEnd !=null">
+          and createdate between #{logCondition.logStart} and #{logCondition.logEnd}
+         </if>
+       </where>
+       order by l.lid
+       ) ll
+       <where>
+         ll.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.LogCondition" resultType="int">
+       
+       select count(*) from log
+       <where>
+         <if test="aid != null and aid !=0">
+          and aid = #{aid} 
+         </if>
+         <if test="bid != null and bid !=0">
+          and bid = #{bid} 
+         </if>
+         <if test="content != null and content !=''">
+          and content like CONCAT(CONCAT('%', #{content}), '%') 
+         </if>
+         <if test="operation != null and operation !=''">
+          and operation like CONCAT(CONCAT('%', #{operation}), '%')
+         </if>
+         <if test="requestip != null and requestip !=''">
+          and requestip like CONCAT(CONCAT('%', #{requestip}), '%')
+         </if>
+         <if test="logStart !=null and logEnd ==null">
+          and createdate <![CDATA[>]]>#{logStart} 
+         </if>
+         <if test="logStart ==null and logEnd !=null">
+          and createdate <![CDATA[<]]>#{logEnd}
+         </if>
+         <if test="logStart !=null and logEnd !=null">
+          and createdate between #{logStart} and #{logEnd}
+         </if>
+       </where>
+    </select>
+  
+    <delete id="deleteLog" parameterType="com.cn.hnust.pojo.Log">
+       delete from log where lid = #{lid}
+    </delete>
+  
+    <sql id='TABLE_NAME'>LOG</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_LOG.nextval</sql>
+	<insert id="insertLog" parameterType="com.cn.hnust.pojo.Log">
+		<selectKey keyProperty="lid" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+		insert into 
+		<include refid="TABLE_NAME" />
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="lid != null and lid !=0">
+				LID,
+			</if>
+<!-- 			<if test="userb.bid != null and userb.bid!=0"> -->
+<!-- 				BID, -->
+<!-- 			</if> -->
+			<if test="admin.aid != null and admin.aid!=0">
+				AID,
+			</if>
+			<if test="content != null and content !=''"> 
+				CONTENT, 
+ 			</if> 
+			<if test="operation != null and operation !=''">
+				OPERATION,
+			</if>
+ 			<if test="requestip != null and requestip !=''"> 
+ 				REQUESTIP, 
+ 			</if> 
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="lid != null and lid !=0">
+				#{lid,jdbcType=INTEGER},
+			</if>
+<!-- 			<if test="userb.bid != null and userb.bid!=0"> -->
+<!-- 				#{userb.bid,jdbcType=INTEGER}, -->
+<!-- 			</if> -->
+			<if test="admin.aid != null and admin.aid!=0">
+				#{admin.aid,jdbcType=INTEGER},
+			</if>
+			<if test="content != null and content !=''" >
+ 		        #{content,jdbcType=VARCHAR}, 
+ 		    </if> 
+		    <if test="operation != null and operation !=''" >
+		        #{operation,jdbcType=VARCHAR},
+		    </if>
+ 		    <if test="requestip != null and requestip !=''" > 
+	            #{requestip,jdbcType=VARCHAR}, 
+ 	        </if> 
+		</trim>
+	</insert>
+  
+    
+</mapper>

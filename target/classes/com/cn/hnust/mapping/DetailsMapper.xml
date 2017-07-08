@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.DetailsMapper" >
+  <resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Details" >
+    <id column="DID" property="did" jdbcType="INTEGER" />
+    <result column="DCONTENT" property="dcontent" jdbcType="VARCHAR" />
+    <result column="REPLYTIME" property="replytime" jdbcType="DATE" />
+    <result column="FLOOR" property="floor" jdbcType="INTEGER" />
+<!--     <result column="PID" property="pid" jdbcType="INTEGER" /> -->
+    <result column="REPLYNUM" property="replynum" jdbcType="VARCHAR"/>
+    <result column="PRAISENUM" property="praisenum" jdbcType="VARCHAR"/>
+	<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+		<id property="bid" column="bid" />
+		<result property="name" column="name" />
+		<result property="img" column="img" />
+	</association>
+	<association property="postings" javaType="com.cn.hnust.pojo.Postings">
+		<id property="pid" column="pid" />
+		<result property="title" column="title" />
+	</association>
+  </resultMap>
+  
+  <insert id="insertDetails" statementType="CALLABLE"
+		parameterType="com.cn.hnust.pojo.Details">
+        {call pro_insertDetails(
+		#{dcontent,mode=IN,jdbcType=VARCHAR},
+		#{userb.bid,mode=IN,jdbcType=INTEGER},
+		#{postings.pid,mode=IN,jdbcType=INTEGER},
+		#{did,mode=OUT,jdbcType=INTEGER}
+		)
+		}
+	</insert>
+  
+      <select id="selectDetailsByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select d.did,d.bid,d.pid,d.dcontent,s.praisenum,c.replynum,d.replytime,rownum as num from details d
+       left join (select did,count(*) as praisenum from praise group by did) s on d.did = s.did
+       left join (select did,count(*) as replynum from comments group by did) c on c.did = d.did   
+       <where>
+         <if test="detailsCondition.bid != null and detailsCondition.bid !=0">
+          and bid =#{detailsCondition.bid} 
+         </if>
+         <if test="detailsCondition.pid != null and detailsCondition.pid !=0">
+          and pid =#{detailsCondition.pid} 
+         </if>
+         <if test="detailsCondition.dcontent != null and detailsCondition.dcontent !=''">
+          and dcontent like CONCAT(CONCAT('%', #{detailsCondition.dcontent}), '%')  
+         </if>
+         <if test="detailsCondition.replyStart !=null and detailsCondition.replyEnd ==null">
+          and replytime <![CDATA[>]]>#{detailsCondition.replyStart} 
+         </if>
+         <if test="detailsCondition.replyStart ==null and detailsCondition.replyEnd !=null">
+          and replytime <![CDATA[<]]>#{detailsCondition.replyEnd}
+         </if>
+         <if test="detailsCondition.replyStart !=null and detailsCondition.replyEnd !=null">
+          and replytime between #{detailsCondition.replyStart} and #{detailsCondition.replyEnd}
+         </if>
+       </where>
+       order by d.did
+       ) dd
+       <where>
+         dd.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.DetailsCondition" resultType="int">
+       
+       select count(*) from details 
+       <where>
+         <if test="bid != null and bid !=0">
+          and bid =#{bid} 
+         </if>
+         <if test="pid != null and pid !=0">
+          and pid =#{pid} 
+         </if>
+         <if test="dcontent != null and dcontent !=''">
+          and dcontent like CONCAT(CONCAT('%', #{dcontent}), '%')  
+         </if>
+         <if test="replyStart !=null and replyEnd ==null">
+          and replytime <![CDATA[>]]>#{replyStart} 
+         </if>
+         <if test="replyStart ==null and replyEnd !=null">
+          and replytime <![CDATA[<]]>#{replyEnd}
+         </if> 
+         <if test="replyStart !=null and replyEnd !=null">
+          and replytime between #{replyStart} and #{replyEnd}
+         </if>
+       </where>
+    </select>
+  
+  <sql id='TABLE_NAME'>DETAILS</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_DETAILS.nextval</sql>
+	<insert id="insertDetailsByProperty" parameterType="com.cn.hnust.pojo.Details">
+		<selectKey keyProperty="did" resultType="int" order="BEFORE">
+		select
+		<include refid="TABLE_SEQUENCE" />
+		from dual
+		</selectKey>
+		
+		insert into 
+		<include refid="TABLE_NAME" />
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="did != null and did !=0 ">
+				DID,
+			</if>
+			<if test="userb.bid != null and userb.bid !=0">
+				BID,
+			</if>
+			<if test="postings.pid != null and postings.pid !=0">
+				PID,
+			</if>
+			<if test="dcontent != null and dcontent !=''">
+				DCONTENT,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="did != null and did !=0">
+				#{did,jdbcType=INTEGER},
+			</if>
+			<if test="userb.bid != null and userb.bid !=0">
+				#{userb.bid,jdbcType=INTEGER},
+			</if>
+			<if test="postings.pid != null and postings.pid !=0">
+				#{postings.pid,jdbcType=INTEGER},
+			</if>
+			<if test="dcontent != null and dcontent !=''">
+				#{dcontent,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+  
+    <delete id="deleteDetails" parameterType="com.cn.hnust.pojo.Details">
+      delete from details where did = #{did}
+    </delete>
+  
+    <update id="updateDetails" parameterType="com.cn.hnust.pojo.Details">
+		update details
+		<set>
+			<if test="userb.bid != null and userb.bid !=0">
+				bid = #{userb.bid,jdbcType=INTEGER},
+			</if>
+			<if test="postings.pid != null and postings.pid !=0">
+				pid = #{postings.pid,jdbcType=INTEGER},
+			</if>
+			<if test="dcontent != null and dcontent !=''">
+				dcontent = #{dcontent,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where DID = #{did,jdbcType=INTEGER}
+	</update> 
+  
+  
+  
+  
+  
+  
+  
+  
+</mapper>

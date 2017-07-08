@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cn.hnust.dao.MsgMapper">
+	<resultMap id="BaseResultMap" type="com.cn.hnust.pojo.Msg">
+		<id column="MID" property="mid" jdbcType="INTEGER" />
+		<result column="TITLE" property="title" jdbcType="VARCHAR" />
+		<result column="MCONTENT" property="mcontent" jdbcType="VARCHAR" />
+		<result column="STATUS" property="status" jdbcType="INTEGER" />
+		<result column="SENDTO" property="sendto" jdbcType="INTEGER" />
+		<result column="MARK" property="mark" jdbcType="INTEGER"/>
+		<result column="SENDDATE" property="senddate" jdbcType="DATE" />
+		<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+			<id property="bid" column="bid" />
+			<result property="name" column="name" />
+			<result property="img" column="img" />
+		</association>
+	<collection property="friend" ofType="com.cn.hnust.pojo.Friend">
+		<id property="fid" column="fid" />
+
+ 		<association property="userb" javaType="com.cn.hnust.pojo.Userb">
+		  <id property="bid" column="fbid"/>
+ 	      <result property="name" column="fname"/>
+		  <result property="img" column="fimg"/>
+		  <result property="intro" column="fintro" jdbcType="VARCHAR"/> 
+		</association>
+		
+  		<association property="userf" javaType="com.cn.hnust.pojo.Userb">
+		  <id property="bid" column="friendid"/>
+   	      <result property="name" column="friendname"/>
+		  <result property="img" column="friendimg"/>
+		  <result property="intro" column="friendintro" jdbcType="VARCHAR"/> 
+		</association> 
+ 
+	</collection>
+	</resultMap>
+	
+	<resultMap id="PhoneMap" type="com.cn.hnust.pojo.Phone">
+		<id column="PID" property="pid" jdbcType="INTEGER" />
+		<result column="PNAME" property="pname" jdbcType="VARCHAR" />
+		<result column="PNUMBER" property="pnumber" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		MID, BID, TITLE, MCONTENT, STATUS, SENDTO, SENDDATE
+	</sql>
+
+	<select id="selectMsgList" resultMap="BaseResultMap"
+		parameterType="com.cn.hnust.pojo.Userb">
+		select m.mid,m.title,m.mcontent,m.status,m.sendto,m.senddate,b.bid,b.name,b.img,
+		fb.bid as friendid
+		from msg m
+		inner join userb b on b.bid = m.bid
+		left join friend f on f.bid = m.sendto
+		left join userb fb on fb.bid = f.bid
+        where m.mark = 0 and m.sendto = #{bid} and m.bid !=#{bid}		
+		order by m.senddate desc
+	</select>
+
+	<sql id='TABLE_NAME'>MSG</sql>
+	<sql id='TABLE_SEQUENCE'>SEQ_MSG.nextval</sql>
+	<insert id="insertMsg" parameterType="com.cn.hnust.pojo.Msg">
+		<selectKey keyProperty="mid" resultType="int" order="BEFORE">
+			select
+			<include refid="TABLE_SEQUENCE" />
+			from dual
+		</selectKey>
+
+		insert into
+		<include refid="TABLE_NAME" /> m
+		(MID, BID,
+		MCONTENT,
+		SENDTO,STATUS)
+		values
+		(#{mid,jdbcType=INTEGER},
+		#{userb.bid,jdbcType=INTEGER},
+		#{mcontent,jdbcType=VARCHAR},
+		#{sendto,jdbcType=INTEGER},
+		#{status,jdbcType=INTEGER})
+	</insert>
+
+    <select id="selectMsgCount" parameterType="com.cn.hnust.pojo.Userb" resultType="int">
+     select sum(num) from ( 
+       select count(*) as num from msg where mark = 0 and sendto = #{bid} and bid !=#{bid}
+       union all 
+       select count(*) as num from postings p left join praise s on s.bid !=p.bid and s.pid = p.pid where s.mark = 0 and s.status =1 and p.bid = #{bid}
+        union all
+        select count(*) as num from details d left join praise s on s.bid !=d.bid and s.did = d.did where s.mark = 0 and s.status =1 and d.bid = #{bid}  
+        union all
+        select count(*) as num from comments c left join praise s on s.bid !=c.bid and s.cid = c.cid where s.mark = 0 and s.status =1 and c.bid =#{bid} 
+     )
+    </select>
+
+    <update id="updateMsgStatus" parameterType="com.cn.hnust.pojo.Msg">
+       update msg set status =#{status} where mid = #{mid} and mark=0
+    </update>
+
+    <update id="updateMsgMark" parameterType="com.cn.hnust.pojo.Msg">
+       update msg set mark=(case when mark=1 then 0 else 1 end) where mid = #{mid}
+    </update>
+
+     <select id="selectMsgByCondition" parameterType="Map" resultMap="BaseResultMap">
+       
+       select * from (select m.*,rownum as num from msg m 
+       <where>
+         <if test="msgCondition.bid != null and msgCondition.bid !=0">
+          and bid = #{msgCondition.bid,jdbcType=INTEGER} 
+         </if>
+         <if test="msgCondition.sendto != null and msgCondition.sendto !=0">
+          and sendto = #{msgCondition.sendto,jdbcType=INTEGER} 
+         </if>
+         <if test="msgCondition.mcontent != null and msgCondition.mcontent !=''">
+          and mcontent like CONCAT(CONCAT('%', #{msgCondition.mcontent}), '%') 
+         </if>
+ <!--     <if test="msgCondition.status != null and msgCondition.status !=''">
+          and status = #{msgCondition.status,jdbcType=INTEGER} 
+         </if>
+         <if test="msgCondition.mark != null and msgCondition.mark !=''">
+          and mark = #{msgCondition.mark,jdbcType=INTEGER} 
+         </if> -->    
+         <if test="msgCondition.msgStart !=null and msgCondition.msgEnd ==null">
+          and senddate <![CDATA[>]]>#{msgCondition.msgStart} 
+         </if>
+         <if test="msgCondition.msgStart ==null and msgCondition.msgEnd !=null">
+          and senddate <![CDATA[<]]>#{msgCondition.msgEnd}
+         </if>
+         <if test="msgCondition.msgStart !=null and msgCondition.msgEnd !=null">
+          and senddate between #{msgCondition.msgStart} and #{msgCondition.msgEnd}
+         </if>
+       </where>
+       order by m.mid
+       ) mm
+       <where>
+         mm.num between (#{pageBean.page,jdbcType=INTEGER}-1)*(#{pageBean.pageSize,jdbcType=INTEGER}+1) and #{pageBean.page,jdbcType=INTEGER}*#{pageBean.pageSize,jdbcType=INTEGER}
+       </where>
+    </select>
+    
+    <select id="getTotal" parameterType="com.cn.hnust.pojo.MsgCondition" resultType="int">
+       
+       select count(*) from msg 
+       <where>
+         <if test="bid != null and bid !=0">
+          and bid = #{bid} 
+         </if>
+         <if test="sendto != null and sendto !=0">
+          and sendto = #{sendto} 
+         </if>
+         <if test="mcontent != null and mcontent !=''">
+          and mcontent like CONCAT(CONCAT('%', #{mcontent}), '%') 
+         </if>
+ <!--      <if test="status != null and status !=0">
+          and status = #{status} 
+         </if>
+         <if test="mark != null and mark !=0">
+          and mark = #{mark} 
+         </if> -->   
+         <if test="msgStart !=null and msgEnd ==null">
+          and senddate <![CDATA[>]]>#{msgStart} 
+         </if>
+         <if test="msgStart ==null and msgEnd !=null">
+          and senddate <![CDATA[<]]>#{msgEnd}
+         </if>
+         <if test="msgStart !=null and msgEnd !=null">
+          and senddate between #{msgStart} and #{msgEnd}
+         </if>
+       </where>
+    </select>
+
+    <delete id="deleteMsg" parameterType="com.cn.hnust.pojo.Msg">
+       delete from msg where mid = #{mid}
+    </delete>
+
+    <select id="selectPhoneList" parameterType="String" resultMap="PhoneMap">
+        select pname,pnumber from phone where pname like CONCAT(CONCAT('%', #{pname}), '%') 
+    </select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Long">
+		select
+		<include refid="Base_Column_List" />
+		from MSG
+		where MID = #{mid,jdbcType=DECIMAL}
+	</select>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+		delete from MSG
+		where MID = #{mid,jdbcType=DECIMAL}
+	</delete>
+	<insert id="insert" parameterType="com.cn.hnust.pojo.Msg">
+		insert into MSG (MID, BID,
+		TITLE,
+		MCONTENT, STATUS, SENDTO,
+		SENDDATE)
+		values
+		(#{mid,jdbcType=DECIMAL}, #{bid,jdbcType=DECIMAL},
+		#{title,jdbcType=VARCHAR},
+		#{mcontent,jdbcType=VARCHAR},
+		#{status,jdbcType=DECIMAL}, #{sendto,jdbcType=DECIMAL},
+		#{senddate,jdbcType=TIMESTAMP})
+	</insert>
+	<insert id="insertSelective" parameterType="com.cn.hnust.pojo.Msg">
+		insert into MSG
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="mid != null">
+				MID,
+			</if>
+			<if test="bid != null">
+				BID,
+			</if>
+			<if test="title != null">
+				TITLE,
+			</if>
+			<if test="mcontent != null">
+				MCONTENT,
+			</if>
+			<if test="status != null">
+				STATUS,
+			</if>
+			<if test="sendto != null">
+				SENDTO,
+			</if>
+			<if test="senddate != null">
+				SENDDATE,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="mid != null">
+				#{mid,jdbcType=DECIMAL},
+			</if>
+			<if test="bid != null">
+				#{bid,jdbcType=DECIMAL},
+			</if>
+			<if test="title != null">
+				#{title,jdbcType=VARCHAR},
+			</if>
+			<if test="mcontent != null">
+				#{mcontent,jdbcType=VARCHAR},
+			</if>
+			<if test="status != null">
+				#{status,jdbcType=DECIMAL},
+			</if>
+			<if test="sendto != null">
+				#{sendto,jdbcType=DECIMAL},
+			</if>
+			<if test="senddate != null">
+				#{senddate,jdbcType=TIMESTAMP},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="com.cn.hnust.pojo.Msg">
+		update MSG
+		<set>
+			<if test="bid != null">
+				BID = #{bid,jdbcType=DECIMAL},
+			</if>
+			<if test="title != null">
+				TITLE = #{title,jdbcType=VARCHAR},
+			</if>
+			<if test="mcontent != null">
+				MCONTENT = #{mcontent,jdbcType=VARCHAR},
+			</if>
+			<if test="status != null">
+				STATUS = #{status,jdbcType=DECIMAL},
+			</if>
+			<if test="sendto != null">
+				SENDTO = #{sendto,jdbcType=DECIMAL},
+			</if>
+			<if test="senddate != null">
+				SENDDATE = #{senddate,jdbcType=TIMESTAMP},
+			</if>
+		</set>
+		where MID = #{mid,jdbcType=DECIMAL}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="com.cn.hnust.pojo.Msg">
+		update MSG
+		set BID
+		= #{bid,jdbcType=DECIMAL},
+		TITLE = #{title,jdbcType=VARCHAR},
+		MCONTENT =
+		#{mcontent,jdbcType=VARCHAR},
+		STATUS = #{status,jdbcType=DECIMAL},
+		SENDTO = #{sendto,jdbcType=DECIMAL},
+		SENDDATE =
+		#{senddate,jdbcType=TIMESTAMP}
+		where MID = #{mid,jdbcType=DECIMAL}
+	</update>
+</mapper>
